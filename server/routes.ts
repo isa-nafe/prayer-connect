@@ -2,7 +2,7 @@ import { Express } from "express";
 import { setupAuth } from "./auth";
 import { setupWebSocket } from "./websocket";
 import { db } from "../db";
-import { prayers, prayerAttendees } from "@db/schema";
+import { prayers, prayerAttendees, messages, users } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 
 export function registerRoutes(app: Express) {
@@ -93,6 +93,37 @@ export function registerRoutes(app: Express) {
       res.json({ message: "Joined successfully" });
     } catch (error) {
       res.status(500).send("Failed to join prayer");
+    }
+  });
+  // Get messages for a prayer
+  app.get("/api/prayers/:id/messages", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Not authenticated");
+    }
+
+    const prayerId = parseInt(req.params.id);
+
+    try {
+      const result = await db
+        .select({
+          id: messages.id,
+          prayerId: messages.prayerId,
+          userId: messages.userId,
+          content: messages.content,
+          createdAt: messages.createdAt,
+          user: {
+            id: users.id,
+            name: users.name,
+          },
+        })
+        .from(messages)
+        .innerJoin(users, eq(messages.userId, users.id))
+        .where(eq(messages.prayerId, prayerId))
+        .orderBy(messages.createdAt);
+
+      res.json(result);
+    } catch (error) {
+      res.status(500).send("Failed to fetch messages");
     }
   });
 }
