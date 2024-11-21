@@ -1,0 +1,54 @@
+import { useUser } from "../hooks/use-user";
+import { usePrayers } from "../hooks/use-prayers";
+import { Button } from "@/components/ui/button";
+import { PrayerCard } from "../components/PrayerCard";
+import { CreatePrayerDialog } from "../components/CreatePrayerDialog";
+import { useState } from "react";
+import { Loader2, LogOut, Plus } from "lucide-react";
+
+export default function HomePage() {
+  const { user, logout } = useUser();
+  const { prayers, isLoading } = usePrayers();
+  const [createOpen, setCreateOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
+      <header className="border-b bg-white/50 backdrop-blur-sm fixed top-0 w-full z-10">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-green-800">SFU Prayer Connect</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
+            <Button variant="outline" size="sm" onClick={() => logout()}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 pt-24 pb-16">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-xl font-semibold text-gray-800">Prayer Meetups</h2>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Prayer Meetup
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center p-8">
+            <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {prayers?.map((prayer) => (
+              <PrayerCard key={prayer.id} prayer={prayer} />
+            ))}
+          </div>
+        )}
+      </main>
+
+      <CreatePrayerDialog open={createOpen} onOpenChange={setCreateOpen} />
+    </div>
+  );
+}
