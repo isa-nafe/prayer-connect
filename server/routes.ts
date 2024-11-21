@@ -5,7 +5,14 @@ import { db } from "../db";
 import { prayers, prayerAttendees, messages, users } from "@db/schema";
 import { eq, sql } from "drizzle-orm";
 
+import { WebSocketServer } from 'ws';
+import type { Express } from 'express';
+
 export function registerRoutes(app: Express) {
+  const wss = app.get('wss') as WebSocketServer;
+  if (!wss) {
+    throw new Error('WebSocket server not initialized');
+  }
   setupAuth(app);
   
 
@@ -52,11 +59,13 @@ export function registerRoutes(app: Express) {
         .returning();
 
       // Notify all connected clients
-      ws.clients.forEach(client => {
-        client.send(JSON.stringify({
-          type: "PRAYER_CREATED",
-          prayer
-        }));
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: "PRAYER_CREATED",
+            prayer
+          }));
+        }
       });
 
       res.json(prayer);

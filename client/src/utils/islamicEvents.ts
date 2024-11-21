@@ -1,4 +1,4 @@
-import { DateTime } from 'hijri-date';
+import moment from 'moment-hijri';
 
 export interface IslamicEvent {
   name: string;
@@ -7,49 +7,74 @@ export interface IslamicEvent {
   hijriDate: string;
 }
 
-function getHijriDate(date: Date): string {
-  const hijriDate = new DateTime(date);
-  return `${hijriDate.day} ${hijriDate.monthName} ${hijriDate.year}`;
+function getGregorianDateFromHijri(iYear: number, iMonth: number, iDay: number): Date {
+  return moment(`${iYear}-${iMonth}-${iDay}`, 'iYYYY-iM-iD').toDate();
+}
+
+function formatHijriDate(iYear: number, iMonth: number, iDay: number): string {
+  const hijriDate = moment(`${iYear}-${iMonth}-${iDay}`, 'iYYYY-iM-iD');
+  return `${hijriDate.iDate()} ${hijriDate.format('iMMMM')} ${hijriDate.iYear()}`;
 }
 
 export function getIslamicEvents(year: number = new Date().getFullYear()): IslamicEvent[] {
+  // Get current Hijri year
+  const now = moment();
+  const currentHijriYear = now.iYear();
+  
   const events = [
     {
       name: "Ramadan",
       description: "The holy month of fasting",
-      gregorianDate: new Date(year, 2, 10) // Approximate, will vary yearly
+      hijri: { month: 9, day: 1 }
     },
     {
       name: "Eid ul-Fitr",
       description: "Festival of breaking the fast",
-      gregorianDate: new Date(year, 3, 10) // Approximate, will vary yearly
+      hijri: { month: 10, day: 1 }
     },
     {
       name: "Eid ul-Adha",
       description: "Festival of sacrifice",
-      gregorianDate: new Date(year, 5, 17) // Approximate, will vary yearly
+      hijri: { month: 12, day: 10 }
     },
     {
       name: "Islamic New Year",
       description: "First day of Muharram",
-      gregorianDate: new Date(year, 6, 19) // Approximate, will vary yearly
+      hijri: { month: 1, day: 1 }
     },
     {
       name: "Ashura",
       description: "10th day of Muharram",
-      gregorianDate: new Date(year, 6, 28) // Approximate, will vary yearly
+      hijri: { month: 1, day: 10 }
     },
     {
       name: "Mawlid al-Nabi",
       description: "Birth of Prophet Muhammad (PBUH)",
-      gregorianDate: new Date(year, 8, 27) // Approximate, will vary yearly
+      hijri: { month: 3, day: 12 }
     }
   ];
 
-  return events.map(event => ({
-    name: event.name,
-    description: event.description,
-    date: event.gregorianDate,
-    hijriDate: getHijriDate(event.gregorianDate)
-  }));
+  return events.map(event => {
+    const date = getGregorianDateFromHijri(currentHijriYear, event.hijri.month, event.hijri.day);
+    const hijriDate = formatHijriDate(currentHijriYear, event.hijri.month, event.hijri.day);
+    
+    // If the event has already passed this year, show next year's date
+    if (date < new Date()) {
+      const nextYearDate = getGregorianDateFromHijri(currentHijriYear + 1, event.hijri.month, event.hijri.day);
+      const nextYearHijriDate = formatHijriDate(currentHijriYear + 1, event.hijri.month, event.hijri.day);
+      return {
+        name: event.name,
+        description: event.description,
+        date: nextYearDate,
+        hijriDate: nextYearHijriDate
+      };
+    }
+
+    return {
+      name: event.name,
+      description: event.description,
+      date: date,
+      hijriDate: hijriDate
+    };
+  }).sort((a, b) => a.date.getTime() - b.date.getTime());
 }
