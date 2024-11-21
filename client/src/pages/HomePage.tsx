@@ -13,6 +13,10 @@ export default function HomePage() {
   const { prayers, isLoading, error } = usePrayers();
 const handleLogout = async () => {
   try {
+    // Disable the logout button to prevent multiple clicks
+    const button = document.querySelector('[onClick="handleLogout"]');
+    if (button) button.setAttribute('disabled', 'true');
+    
     const result = await logout();
     if (!result.ok) {
       throw new Error(result.message);
@@ -24,6 +28,9 @@ const handleLogout = async () => {
       description: error instanceof Error ? error.message : "Failed to logout",
       variant: "destructive"
     });
+    // Re-enable the button on error
+    const button = document.querySelector('[onClick="handleLogout"]');
+    if (button) button.removeAttribute('disabled');
   }
 };
   const [createOpen, setCreateOpen] = useState(false);

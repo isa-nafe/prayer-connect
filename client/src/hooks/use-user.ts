@@ -76,14 +76,18 @@ export function useUser() {
   const logoutMutation = useMutation<RequestResult, Error>({
     mutationFn: () => handleRequest('/api/logout', 'POST'),
     onSuccess: () => {
-      // Clear all cached data first
+      // Close WebSocket connections first
+      const ws = document.querySelectorAll('ws');
+      ws.forEach(connection => connection.close());
+      
+      // Then clear all cached data
       queryClient.clear();
-      // Then clear user data
       queryClient.setQueryData(['user'], null);
-      // Force a refetch
-      queryClient.invalidateQueries({ queryKey: ['user'] });
-      // Clear WebSocket connections and redirect
-      window.location.href = '/';
+      
+      // Finally redirect after a small delay to ensure cleanup
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     },
     onError: (error) => {
       console.error('Logout failed:', error);
