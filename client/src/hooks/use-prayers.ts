@@ -1,12 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Prayer } from '@db/schema';
+
+type PrayerWithAttendees = Prayer & {
+  attendeeCount: number;
+};
 import { useToast } from '@/hooks/use-toast';
 
 export function usePrayers() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: prayers, isLoading } = useQuery<Prayer[]>({
+  const { data: prayers, isLoading, error } = useQuery<PrayerWithAttendees[]>({
     queryKey: ['prayers'],
     queryFn: async () => {
       const response = await fetch('/api/prayers');

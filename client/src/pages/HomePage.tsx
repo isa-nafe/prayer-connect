@@ -8,7 +8,7 @@ import { Loader2, LogOut, Plus } from "lucide-react";
 
 export default function HomePage() {
   const { user, logout } = useUser();
-  const { prayers, isLoading } = usePrayers();
+  const { prayers, isLoading, error } = usePrayers();
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
@@ -35,7 +35,11 @@ export default function HomePage() {
           </Button>
         </div>
 
-        {isLoading ? (
+        {error ? (
+          <div className="flex justify-center p-8">
+            <div className="text-red-600">Failed to load prayers. Please try again later.</div>
+          </div>
+        ) : isLoading ? (
           <div className="flex justify-center p-8">
             <Loader2 className="w-8 h-8 animate-spin text-green-600" />
           </div>

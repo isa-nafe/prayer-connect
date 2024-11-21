@@ -3,7 +3,7 @@ import { setupAuth } from "./auth";
 import { setupWebSocket } from "./websocket";
 import { db } from "../db";
 import { prayers, prayerAttendees } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export function registerRoutes(app: Express) {
   setupAuth(app);
@@ -23,7 +23,7 @@ export function registerRoutes(app: Express) {
           musallahLocation: prayers.musallahLocation,
           prayerTime: prayers.prayerTime,
           createdAt: prayers.createdAt,
-          attendeeCount: db.count(prayerAttendees.userId).as('attendeeCount')
+          attendeeCount: sql`count(${prayerAttendees.userId})`.as('attendeeCount')
         })
         .from(prayers)
         .leftJoin(prayerAttendees, eq(prayers.id, prayerAttendees.prayerId))

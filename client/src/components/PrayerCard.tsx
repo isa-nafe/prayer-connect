@@ -25,7 +25,7 @@ export function PrayerCard({ prayer }: PrayerCardProps) {
         </p>
         <div className="flex items-center text-sm text-gray-600">
           <Users className="w-4 h-4 mr-1" />
-          {prayer.attendeeCount || 1} attending
+          {typeof prayer.attendeeCount === 'number' ? prayer.attendeeCount : 1} attending
         </div>
       </CardContent>
       <CardFooter>
