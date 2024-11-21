@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUser } from "../hooks/use-user";
 import { format } from "date-fns";
 import { Send } from "lucide-react";
@@ -34,7 +34,8 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
 
     const connect = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const port = process.env.NODE_ENV === 'development' ? ':5000' : '';
+      const wsUrl = `${protocol}//${window.location.hostname}${port}`;
       
       ws.current = new WebSocket(wsUrl);
       
@@ -146,6 +147,9 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
         <div className="flex justify-between items-center">
           <div className="space-y-1">
             <DialogTitle className="font-semibold">Prayer Meetup Chat</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
+              Chat with other attendees of this prayer meetup
+            </DialogDescription>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
               <span className="text-xs text-gray-500">

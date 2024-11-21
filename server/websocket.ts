@@ -10,11 +10,10 @@ interface ExtendedWebSocket extends WebSocket {
   isAlive?: boolean;
 }
 
-export function setupWebSocket(app: Express) {
-  const server = createServer(app);
+export function setupWebSocket(server: Server) {
   const wss = new WebSocketServer({ 
     server,
-    path: '/ws' // Add explicit path
+    path: '/ws'  // Explicit WebSocket path
   });
 
   // Add ping/pong interval to keep connections alive

@@ -49,8 +49,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  registerRoutes(app);
   const server = createServer(app);
+  app.set('server', server); // Make server available to other modules
+  
+  registerRoutes(app);
+
+  // Setup WebSocket after creating server
+  const { setupWebSocket } = await import('./websocket.js');
+  const wss = setupWebSocket(server); // Pass server directly instead of app
+  app.set('wss', wss); // Store WebSocket server instance
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
