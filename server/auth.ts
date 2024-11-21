@@ -205,20 +205,20 @@ export function setupAuth(app: Express) {
 
   // Logout endpoint
   app.post("/api/logout", (req, res) => {
-    req.logout((err) => {
-      if (err) {
-        console.error('Logout failed:', err);
-        return res.status(500).json({ ok: false, message: "Logout failed" });
-      }
+    if (req.session) {
       req.session.destroy((err) => {
         if (err) {
           console.error('Session destruction failed:', err);
           return res.status(500).json({ ok: false, message: "Failed to destroy session" });
         }
-        res.clearCookie('connect.sid');
-        res.json({ ok: true, message: "Logout successful" });
+        req.logout(() => {
+          res.clearCookie('connect.sid');
+          res.json({ ok: true, message: "Logout successful" });
+        });
       });
-    });
+    } else {
+      res.json({ ok: true, message: "Already logged out" });
+    }
   });
 
   // Get current user endpoint

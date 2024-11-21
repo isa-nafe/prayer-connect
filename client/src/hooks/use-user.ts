@@ -74,25 +74,22 @@ export function useUser() {
   });
 
   const logoutMutation = useMutation<RequestResult, Error>({
-    mutationFn: () => handleRequest('/api/logout', 'POST'),
-    onSuccess: () => {
-      // Close WebSocket connections first
-      const ws = document.querySelectorAll('ws');
-      ws.forEach(connection => connection.close());
+    mutationFn: async () => {
+      // First close all WebSocket connections
+      const wsConnections = Array.from(document.getElementsByTagName('iframe'))
+        .map(iframe => iframe.contentWindow)
+        .filter(win => win && win.WebSocket)
+        .map(win => win.WebSocket);
+      wsConnections.forEach(ws => ws.close());
       
-      // Then clear all cached data
+      // Then perform logout
+      return handleRequest('/api/logout', 'POST');
+    },
+    onSuccess: () => {
       queryClient.clear();
       queryClient.setQueryData(['user'], null);
-      
-      // Finally redirect after a small delay to ensure cleanup
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 100);
-    },
-    onError: (error) => {
-      console.error('Logout failed:', error);
-      throw error;
-    },
+      window.location.href = '/';
+    }
   });
 
   const registerMutation = useMutation<RequestResult, Error, InsertUser>({
