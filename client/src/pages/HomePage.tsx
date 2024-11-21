@@ -13,6 +13,12 @@ export default function HomePage() {
   const { prayers, isLoading, error } = usePrayers();
 const handleLogout = async () => {
   try {
+    // Disable logout button
+    const logoutButton = document.querySelector('[data-logout-button]');
+    if (logoutButton) {
+      (logoutButton as HTMLButtonElement).disabled = true;
+    }
+    
     await logout();
   } catch (error) {
     console.error('Logout failed:', error);
@@ -21,6 +27,12 @@ const handleLogout = async () => {
       description: error instanceof Error ? error.message : "Failed to logout",
       variant: "destructive"
     });
+    
+    // Re-enable button on error
+    const logoutButton = document.querySelector('[data-logout-button]');
+    if (logoutButton) {
+      (logoutButton as HTMLButtonElement).disabled = false;
+    }
   }
 };
   const [createOpen, setCreateOpen] = useState(false);

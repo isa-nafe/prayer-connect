@@ -75,20 +75,44 @@ export function useUser() {
 
   const logoutMutation = useMutation<RequestResult, Error>({
     mutationFn: async () => {
-      // First close all WebSocket connections
-      const wsConnections = Array.from(document.getElementsByTagName('iframe'))
-        .map(iframe => iframe.contentWindow)
-        .filter(win => win && win.WebSocket)
-        .map(win => win.WebSocket);
-      wsConnections.forEach(ws => ws.close());
-      
-      // Then perform logout
-      return handleRequest('/api/logout', 'POST');
+      try {
+        // First close WebSocket connections
+        const wsElements = document.querySelectorAll('[data-websocket-connection]');
+        wsElements.forEach(el => {
+          const ws = (el as any).websocket;
+          if (ws && ws.close) ws.close();
+        });
+        
+        // Clear all cached data
+        queryClient.clear();
+        
+        // Perform logout request
+        const result = await handleRequest('/api/logout', 'POST');
+        
+        if (result.ok) {
+          // Only redirect on successful logout
+          window.location.href = '/';
+        }
+        
+        return result;
+      } catch (error) {
+        console.error('Logout error:', error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onMutate: () => {
+      // Prevent multiple clicks
+      return { previousData: queryClient.getQueryData(['user']) };
+    },
+    onError: (_, __, context) => {
+      // Restore previous data on error
+      if (context) {
+        queryClient.setQueryData(['user'], context.previousData);
+      }
+    },
+    onSettled: () => {
+      // Always clear cache
       queryClient.clear();
-      queryClient.setQueryData(['user'], null);
-      window.location.href = '/';
     }
   });
 
