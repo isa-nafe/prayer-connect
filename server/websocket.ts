@@ -1,6 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { Express } from "express";
-import { createServer } from "http";
+import { Server } from 'http';
 import { db } from "../db";
 import { messages, users } from "@db/schema";
 import { eq } from "drizzle-orm";

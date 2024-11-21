@@ -35,7 +35,7 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
     const connect = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const port = process.env.NODE_ENV === 'development' ? ':5000' : '';
-      const wsUrl = `${protocol}//${window.location.hostname}${port}`;
+      const wsUrl = `${protocol}//${window.location.hostname}${port}/ws`;
       
       ws.current = new WebSocket(wsUrl);
       
@@ -78,8 +78,14 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
         reconnectTimer = setTimeout(connect, 2000);
       };
 
-      ws.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
+      ws.current.onerror = (error: Event) => {
+        const wsError = error as ErrorEvent;
+        console.error("WebSocket error details:", {
+          message: wsError.message,
+          error: wsError.error,
+          type: wsError.type,
+          timeStamp: wsError.timeStamp
+        });
         setIsConnected(false);
       };
 
