@@ -11,6 +11,21 @@ import { Loader2, LogOut, Plus } from "lucide-react";
 export default function HomePage() {
   const { user, logout } = useUser();
   const { prayers, isLoading, error } = usePrayers();
+const handleLogout = async () => {
+  try {
+    const result = await logout();
+    if (!result.ok) {
+      throw new Error(result.message);
+    }
+  } catch (error) {
+    console.error('Logout failed:', error);
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to logout",
+      variant: "destructive"
+    });
+  }
+};
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
@@ -23,21 +38,7 @@ export default function HomePage() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={async () => {
-                try {
-                  const result = await logout();
-                  if (!result.ok) {
-                    throw new Error(result.message);
-                  }
-                } catch (error) {
-                  console.error('Logout failed:', error);
-                  toast({
-                    title: "Logout Failed",
-                    description: error instanceof Error ? error.message : "Failed to logout",
-                    variant: "destructive"
-                  });
-                }
-              }}
+              onClick={handleLogout}
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
