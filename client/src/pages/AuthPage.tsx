@@ -30,15 +30,6 @@ export default function AuthPage() {
 
   const onSubmit = async (data: AuthFormData) => {
     try {
-      if (!data.email.endsWith('@sfu.ca')) {
-        toast({
-          title: "Invalid Email",
-          description: "Please use your SFU email address",
-          variant: "destructive"
-        });
-        return;
-      }
-
       const result = isRegister 
         ? await register({ ...data, name: data.name! }) 
         : await login(data);

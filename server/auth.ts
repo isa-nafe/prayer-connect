@@ -127,11 +127,6 @@ export function setupAuth(app: Express) {
 
       const { email, password, name } = result.data;
 
-      // Verify SFU email
-      if (!email.endsWith('@sfu.ca')) {
-        return res.status(400).send("Please use your SFU email address");
-      }
-
       // Check if user already exists
       const [existingUser] = await db
         .select()
