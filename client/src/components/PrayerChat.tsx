@@ -37,6 +37,10 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
     const INITIAL_RETRY_DELAY = 1000;
     
     const connect = () => {
+      // Close existing connection if any
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        ws.current.close();
+      }
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsHost = window.location.host;
       const wsUrl = `${wsProtocol}//${wsHost}/ws`;
@@ -58,9 +62,15 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
         setIsConnected(true);
         heartbeat();
         if (user) {
+          // Send authentication and subscribe to prayer room
           ws.current?.send(JSON.stringify({
             type: "AUTHENTICATE",
             userId: user.id
+          }));
+          
+          ws.current?.send(JSON.stringify({
+            type: "SUBSCRIBE_PRAYER",
+            prayerId
           }));
         }
         while (messageQueue.current.length > 0) {
@@ -112,7 +122,12 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
           switch (data.type) {
             case "NEW_CHAT_MESSAGE":
               if (data.message.prayerId === prayerId) {
-                setMessages(prev => [...prev, data.message]);
+                setMessages(prev => {
+                // Check if message already exists
+                const exists = prev.some(m => m.id === data.message.id);
+                if (exists) return prev;
+                return [...prev, data.message];
+              });
                 // Scroll to bottom
                 if (scrollAreaRef.current) {
                   scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
@@ -141,8 +156,16 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
     connect();
 
     return () => {
+      if (ws.current?.readyState === WebSocket.OPEN) {
+        // Unsubscribe from prayer room before closing
+        ws.current.send(JSON.stringify({
+          type: "UNSUBSCRIBE_PRAYER",
+          prayerId
+        }));
+      }
       clearTimeout(reconnectTimer);
       ws.current?.close();
+      ws.current = null;
     };
   }, [prayerId, user]);
 
