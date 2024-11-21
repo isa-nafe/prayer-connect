@@ -33,24 +33,45 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
     let reconnectTimer: NodeJS.Timeout;
 
     const connect = () => {
-      ws.current = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
       
+      ws.current = new WebSocket(wsUrl);
+      
+      // Add ping/pong handlers
+      let pingTimeout: NodeJS.Timeout;
+      
+      const heartbeat = () => {
+        clearTimeout(pingTimeout);
+        pingTimeout = setTimeout(() => {
+          ws.current?.close();
+        }, 45000);
+      };
+
       ws.current.onopen = () => {
         setIsConnected(true);
+        heartbeat();
         if (user) {
           ws.current?.send(JSON.stringify({
             type: "AUTHENTICATE",
             userId: user.id
           }));
         }
-        // Send any queued messages
         while (messageQueue.current.length > 0) {
           const msg = messageQueue.current.shift();
           ws.current?.send(JSON.stringify(msg));
         }
       };
 
+      // Set up ping interval
+      const pingInterval = setInterval(() => {
+        if (ws.current?.readyState === WebSocket.OPEN) {
+          ws.current.send(JSON.stringify({ type: "PING" }));
+        }
+      }, 30000);
+
       ws.current.onclose = () => {
+        clearInterval(pingInterval);
         setIsConnected(false);
         // Attempt to reconnect after 2 seconds
         reconnectTimer = setTimeout(connect, 2000);
@@ -64,12 +85,22 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
       ws.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === "NEW_CHAT_MESSAGE" && data.message.prayerId === prayerId) {
-            setMessages(prev => [...prev, data.message]);
-            // Scroll to bottom
-            if (scrollAreaRef.current) {
-              scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-            }
+          switch (data.type) {
+            case "NEW_CHAT_MESSAGE":
+              if (data.message.prayerId === prayerId) {
+                setMessages(prev => [...prev, data.message]);
+                // Scroll to bottom
+                if (scrollAreaRef.current) {
+                  scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+                }
+              }
+              break;
+            case "PONG":
+              heartbeat();
+              break;
+            case "ERROR":
+              console.error("WebSocket error:", data.error);
+              break;
           }
         } catch (error) {
           console.error("Error parsing message:", error);

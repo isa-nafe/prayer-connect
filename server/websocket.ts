@@ -12,7 +12,26 @@ interface ExtendedWebSocket extends WebSocket {
 
 export function setupWebSocket(app: Express) {
   const server = createServer(app);
-  const wss = new WebSocketServer({ server });
+  const wss = new WebSocketServer({ 
+    server,
+    path: '/ws' // Add explicit path
+  });
+
+  // Add ping/pong interval to keep connections alive
+  const interval = setInterval(() => {
+    wss.clients.forEach((ws: WebSocket) => {
+      const extWs = ws as ExtendedWebSocket;
+      if (extWs.isAlive === false) {
+        return ws.terminate();
+      }
+      extWs.isAlive = false;
+      ws.ping();
+    });
+  }, 30000);
+
+  wss.on('close', () => {
+    clearInterval(interval);
+  });
 
   wss.on("connection", (ws) => {
     ws.on("error", console.error);
