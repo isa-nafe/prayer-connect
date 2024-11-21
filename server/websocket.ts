@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { Server } from 'http';
+import { randomBytes } from 'crypto';
 import { db } from "../db";
 import { messages, users } from "@db/schema";
 import { eq } from "drizzle-orm";
@@ -62,7 +63,7 @@ export function setupWebSocket(server: Server) {
     const extWs = ws as ExtendedWebSocket;
     extWs.isAlive = true;
     extWs.subscribedPrayers = new Set();
-    extWs.connectionId = crypto.randomBytes(16).toString('hex');
+    extWs.connectionId = randomBytes(16).toString('hex');
 
     ws.on("pong", () => {
       extWs.isAlive = true;

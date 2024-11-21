@@ -51,7 +51,14 @@ export function PrayerCard({ prayer }: PrayerCardProps) {
 
       <Dialog open={chatOpen} onOpenChange={setChatOpen}>
         <DialogContent className="max-w-2xl p-0">
-          <PrayerChat prayerId={prayer.id} onClose={() => setChatOpen(false)} />
+          <ErrorBoundary
+            onReset={() => {
+              setChatOpen(false);
+              setTimeout(() => setChatOpen(true), 100);
+            }}
+          >
+            <PrayerChat prayerId={prayer.id} onClose={() => setChatOpen(false)} />
+          </ErrorBoundary>
         </DialogContent>
       </Dialog>
     </Card>
