@@ -52,18 +52,17 @@ app.use((req, res, next) => {
   const server = createServer(app);
   app.set('server', server);
 
-  let wss;
   try {
-    // Setup WebSocket before routes to ensure proper initialization
+    // Setup WebSocket before routes
     const { setupWebSocket } = await import('./websocket.js');
-    wss = setupWebSocket(server);
+    const wss = setupWebSocket(server);
     app.set('wss', wss);
 
     // Only register routes after WebSocket is initialized
     registerRoutes(app);
   } catch (error) {
     console.error('Failed to initialize WebSocket server:', error);
-    process.exit(1); // Exit if WebSocket server fails to initialize
+    throw error; // Let the error handler deal with it
   }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

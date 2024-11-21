@@ -1,0 +1,70 @@
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 271788.3000000715}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 272182.2000000477}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 274066.2000000477}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 274611.7000000477}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 276468.39999997616}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 276964.3000000715}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 278787.5}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 279276.8000000715}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 281077.60000002384}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 281685.39999997616}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 283534.2000000477}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 284141.39999997616}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 286120.8000000715}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 286657.8000000715}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 289422.2000000477}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 290865.8000000715}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 296239}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 297567.89999997616}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 299871.10000002384}
+error: undefined
+message: undefined
+timeStamp: 299871.10000002384
+type: "error"
+[[Prototype]]: Object
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 303387.8000000715}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 304115.39999997616}
+
+WebSocket error details: 
+Object {message: undefined, error: undefined, type: "error", timeStamp: 306935.2000000477}

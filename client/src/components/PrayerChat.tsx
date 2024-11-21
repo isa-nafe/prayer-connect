@@ -32,11 +32,16 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
   useEffect(() => {
     let reconnectTimer: NodeJS.Timeout;
 
+    let retryCount = 0;
+    const MAX_RETRY_COUNT = 5;
+    const INITIAL_RETRY_DELAY = 1000;
+    
     const connect = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const port = process.env.NODE_ENV === 'development' ? ':5000' : '';
-      const wsUrl = `${protocol}//${window.location.hostname}${port}/ws`;
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = window.location.host;
+      const wsUrl = `${wsProtocol}//${wsHost}/ws`;
       
+      console.log('Attempting WebSocket connection to:', wsUrl);
       ws.current = new WebSocket(wsUrl);
       
       // Add ping/pong handlers
@@ -74,8 +79,20 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
       ws.current.onclose = () => {
         clearInterval(pingInterval);
         setIsConnected(false);
-        // Attempt to reconnect after 2 seconds
-        reconnectTimer = setTimeout(connect, 2000);
+        
+        // Implement exponential backoff for reconnection
+        if (retryCount < MAX_RETRY_COUNT) {
+          const delay = Math.min(INITIAL_RETRY_DELAY * Math.pow(2, retryCount), 30000);
+          console.log(`Attempting reconnection in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRY_COUNT})`);
+          reconnectTimer = setTimeout(() => {
+            retryCount++;
+            connect();
+          }, delay);
+        } else {
+          console.error('Max reconnection attempts reached');
+          // Queue any new messages while disconnected
+          messageQueue.current = [];
+        }
       };
 
       ws.current.onerror = (error: Event) => {
