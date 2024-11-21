@@ -62,7 +62,9 @@ export function setupAuth(app: Express) {
     };
   }
 
+  // Setup session first
   app.use(session(sessionSettings));
+  // Then setup passport
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -116,13 +118,14 @@ export function setupAuth(app: Express) {
   });
 
   // Register endpoint
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", async (req, res) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
-        return res
-          .status(400)
-          .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid input: " + result.error.issues.map(i => i.message).join(", ")
+        });
       }
 
       const { email, password, name } = result.data;
@@ -135,7 +138,10 @@ export function setupAuth(app: Express) {
         .limit(1);
 
       if (existingUser) {
-        return res.status(400).send("Email already registered");
+        return res.status(400).json({
+          ok: false,
+          message: "Email already registered"
+        });
       }
 
       // Hash password and create user
@@ -150,17 +156,26 @@ export function setupAuth(app: Express) {
         .returning();
 
       // Log the user in after registration
-      req.login(newUser, (err) => {
-        if (err) {
-          return next(err);
-        }
-        res.json({
-          message: "Registration successful",
-          user: { id: newUser.id, email: newUser.email, name: newUser.name },
+      return new Promise<void>((resolve, reject) => {
+        req.login(newUser, (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          res.json({
+            ok: true,
+            message: "Registration successful",
+            user: { id: newUser.id, email: newUser.email, name: newUser.name },
+          });
+          resolve();
         });
       });
     } catch (error) {
-      next(error);
+      console.error('Registration error:', error);
+      res.status(500).json({
+        ok: false,
+        message: "An unexpected error occurred during registration"
+      });
     }
   });
 
@@ -190,42 +205,20 @@ export function setupAuth(app: Express) {
 
   // Logout endpoint
   app.post("/api/logout", (req, res) => {
-    try {
-      // First destroy the session
-      req.session.destroy((sessionErr) => {
-        if (sessionErr) {
-          console.error('Session destruction failed:', sessionErr);
-          return res.status(500).json({ 
-            ok: false, 
-            message: "Failed to destroy session" 
-          });
+    req.logout((err) => {
+      if (err) {
+        console.error('Logout failed:', err);
+        return res.status(500).json({ ok: false, message: "Logout failed" });
+      }
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('Session destruction failed:', err);
+          return res.status(500).json({ ok: false, message: "Failed to destroy session" });
         }
-
-        // Then logout
-        req.logout((logoutErr) => {
-          if (logoutErr) {
-            console.error('Logout failed:', logoutErr);
-            return res.status(500).json({ 
-              ok: false, 
-              message: "Logout failed" 
-            });
-          }
-
-          // Clear the cookie
-          res.clearCookie('connect.sid');
-          res.json({ 
-            ok: true, 
-            message: "Logout successful" 
-          });
-        });
+        res.clearCookie('connect.sid');
+        res.json({ ok: true, message: "Logout successful" });
       });
-    } catch (error) {
-      console.error('Unexpected error during logout:', error);
-      res.status(500).json({ 
-        ok: false, 
-        message: "An unexpected error occurred during logout" 
-      });
-    }
+    });
   });
 
   // Get current user endpoint

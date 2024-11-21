@@ -84,7 +84,15 @@ export function useUser() {
     },
     onError: (error) => {
       console.error('Logout failed:', error);
+      // Retry logout on session-related errors
+      if (error.message.includes('session')) {
+        return handleRequest('/api/logout', 'POST');
+      }
       throw error;
+    },
+    retry: (failureCount, error) => {
+      // Retry up to 3 times for session-related errors
+      return failureCount < 3 && error.message.includes('session');
     },
   });
 
