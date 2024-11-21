@@ -24,51 +24,87 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
   const { user } = useUser();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
   const ws = useRef<WebSocket | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messageQueue = useRef<any[]>([]);
 
   useEffect(() => {
-    // Connect to WebSocket with protocol matching the page
-    ws.current = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
+    let reconnectTimer: NodeJS.Timeout;
 
-    ws.current.onopen = () => {
-      if (user) {
-        ws.current?.send(JSON.stringify({
-          type: "AUTHENTICATE",
-          userId: user.id
-        }));
-      }
-    };
-
-    ws.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "NEW_CHAT_MESSAGE" && data.message.prayerId === prayerId) {
-        setMessages(prev => [...prev, data.message]);
-        // Scroll to bottom
-        if (scrollAreaRef.current) {
-          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    const connect = () => {
+      ws.current = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
+      
+      ws.current.onopen = () => {
+        setIsConnected(true);
+        if (user) {
+          ws.current?.send(JSON.stringify({
+            type: "AUTHENTICATE",
+            userId: user.id
+          }));
         }
-      }
+        // Send any queued messages
+        while (messageQueue.current.length > 0) {
+          const msg = messageQueue.current.shift();
+          ws.current?.send(JSON.stringify(msg));
+        }
+      };
+
+      ws.current.onclose = () => {
+        setIsConnected(false);
+        // Attempt to reconnect after 2 seconds
+        reconnectTimer = setTimeout(connect, 2000);
+      };
+
+      ws.current.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        setIsConnected(false);
+      };
+
+      ws.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "NEW_CHAT_MESSAGE" && data.message.prayerId === prayerId) {
+            setMessages(prev => [...prev, data.message]);
+            // Scroll to bottom
+            if (scrollAreaRef.current) {
+              scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing message:", error);
+        }
+      };
     };
 
     // Fetch existing messages
     fetch(`/api/prayers/${prayerId}/messages`)
       .then(res => res.json())
-      .then(setMessages);
+      .then(setMessages)
+      .catch(error => console.error("Error fetching messages:", error));
+
+    connect();
 
     return () => {
+      clearTimeout(reconnectTimer);
       ws.current?.close();
     };
   }, [prayerId, user]);
 
   const sendMessage = () => {
-    if (!newMessage.trim() || !ws.current) return;
+    if (!newMessage.trim()) return;
 
-    ws.current.send(JSON.stringify({
+    const message = {
       type: "CHAT_MESSAGE",
       prayerId,
       content: newMessage.trim()
-    }));
+    };
+
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify(message));
+    } else {
+      messageQueue.current.push(message);
+    }
 
     setNewMessage("");
   };
@@ -77,7 +113,15 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
     <div className="flex flex-col h-[500px]">
       <DialogHeader className="p-4 border-b">
         <div className="flex justify-between items-center">
-          <DialogTitle className="font-semibold">Prayer Meetup Chat</DialogTitle>
+          <div className="space-y-1">
+            <DialogTitle className="font-semibold">Prayer Meetup Chat</DialogTitle>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-xs text-gray-500">
+                {isConnected ? 'Connected' : 'Reconnecting...'}
+              </span>
+            </div>
+          </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Close
           </Button>
