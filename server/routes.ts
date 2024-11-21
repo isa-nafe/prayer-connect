@@ -7,7 +7,7 @@ import { eq, sql } from "drizzle-orm";
 
 export function registerRoutes(app: Express) {
   setupAuth(app);
-  const ws = setupWebSocket(app);
+  
 
   // Get all prayers
   app.get("/api/prayers", async (req, res) => {

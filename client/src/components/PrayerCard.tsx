@@ -7,6 +7,7 @@ import { usePrayers } from "../hooks/use-prayers";
 import { Users, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { PrayerChat } from "./PrayerChat";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 interface PrayerCardProps {
   prayer: Prayer & { attendeeCount?: number };
