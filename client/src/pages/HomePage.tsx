@@ -2,6 +2,7 @@ import { useUser } from "../hooks/use-user";
 import { usePrayers } from "../hooks/use-prayers";
 import { Button } from "@/components/ui/button";
 import { PrayerCard } from "../components/PrayerCard";
+import { IslamicEvents } from "../components/IslamicEvents";
 import { PrayerTimes } from "../components/PrayerTimes";
 import { CreatePrayerDialog } from "../components/CreatePrayerDialog";
 import { useState } from "react";
@@ -54,8 +55,9 @@ export default function HomePage() {
           </div>
         )}
           </div>
-          <div>
+          <div className="space-y-8">
             <PrayerTimes />
+            <IslamicEvents />
           </div>
         </div>
       </main>
