@@ -195,12 +195,42 @@ export function setupAuth(app: Express) {
 
   // Logout endpoint
   app.post("/api/logout", (req, res) => {
-    req.logout((err) => {
-      if (err) {
-        return res.status(500).send("Logout failed");
-      }
-      res.json({ message: "Logout successful" });
-    });
+    try {
+      // First destroy the session
+      req.session.destroy((sessionErr) => {
+        if (sessionErr) {
+          console.error('Session destruction failed:', sessionErr);
+          return res.status(500).json({ 
+            ok: false, 
+            message: "Failed to destroy session" 
+          });
+        }
+
+        // Then logout
+        req.logout((logoutErr) => {
+          if (logoutErr) {
+            console.error('Logout failed:', logoutErr);
+            return res.status(500).json({ 
+              ok: false, 
+              message: "Logout failed" 
+            });
+          }
+
+          // Clear the cookie
+          res.clearCookie('connect.sid');
+          res.json({ 
+            ok: true, 
+            message: "Logout successful" 
+          });
+        });
+      });
+    } catch (error) {
+      console.error('Unexpected error during logout:', error);
+      res.status(500).json({ 
+        ok: false, 
+        message: "An unexpected error occurred during logout" 
+      });
+    }
   });
 
   // Get current user endpoint

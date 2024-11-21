@@ -20,7 +20,25 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold text-green-800">SFU Prayer Connect</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
-            <Button variant="outline" size="sm" onClick={() => logout()}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={async () => {
+                try {
+                  const result = await logout();
+                  if (!result.ok) {
+                    throw new Error(result.message);
+                  }
+                } catch (error) {
+                  console.error('Logout failed:', error);
+                  toast({
+                    title: "Logout Failed",
+                    description: error instanceof Error ? error.message : "Failed to logout",
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
