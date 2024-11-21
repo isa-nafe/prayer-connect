@@ -17,26 +17,19 @@ export function registerRoutes(app: Express) {
 
     try {
       const result = await db
-        .select()
+        .select({
+          id: prayers.id,
+          creatorId: prayers.creatorId,
+          musallahLocation: prayers.musallahLocation,
+          prayerTime: prayers.prayerTime,
+          createdAt: prayers.createdAt,
+          attendeeCount: db.count(prayerAttendees.userId).as('attendeeCount')
+        })
         .from(prayers)
         .leftJoin(prayerAttendees, eq(prayers.id, prayerAttendees.prayerId))
-        .groupBy(prayers.id)
-        .then((rows) => rows.map(row => ({
-          ...row,
-          attendeeCount: row.prayerId ? 1 : 0
-        })));
+        .groupBy(prayers.id);
 
-      // Group prayers by ID and count attendees
-      const prayersMap = new Map();
-      result.forEach(row => {
-        const prayer = prayersMap.get(row.id) || { ...row, attendeeCount: 0 };
-        if (row.attendees) {
-          prayer.attendeeCount++;
-        }
-        prayersMap.set(row.id, prayer);
-      });
-
-      res.json(Array.from(prayersMap.values()));
+      res.json(result);
     } catch (error) {
       res.status(500).send("Failed to fetch prayers");
     }

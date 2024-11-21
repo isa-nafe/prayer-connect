@@ -5,7 +5,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import nodemailer from "nodemailer";
+
 import { users, insertUserSchema, type User as SelectUser } from "@db/schema";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
@@ -32,16 +32,7 @@ const crypto = {
   },
 };
 
-// Email verification setup
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+
 
 declare global {
   namespace Express {
@@ -97,9 +88,7 @@ export function setupAuth(app: Express) {
             return done(null, false, { message: "Incorrect password." });
           }
 
-          if (!user.verified) {
-            return done(null, false, { message: "Email not verified." });
-          }
+          
 
           return done(null, user);
         } catch (err) {
@@ -156,29 +145,24 @@ export function setupAuth(app: Express) {
 
       // Hash password and create user
       const hashedPassword = await crypto.hash(password);
-      const verificationToken = crypto.generateToken();
-
       const [newUser] = await db
         .insert(users)
         .values({
           email,
           name,
           password: hashedPassword,
-          verified: 0,
         })
         .returning();
 
-      // Send verification email
-      const verificationUrl = `${process.env.APP_URL}/verify-email?token=${verificationToken}`;
-      await transporter.sendMail({
-        from: '"SFU Prayer Connect" <noreply@sfuprayerconnect.com>',
-        to: email,
-        subject: "Verify your email",
-        html: `
-          <h1>Welcome to SFU Prayer Connect!</h1>
-          <p>Click the link below to verify your email address:</p>
-          <a href="${verificationUrl}">${verificationUrl}</a>
-        `,
+      // Log the user in after registration
+      req.login(newUser, (err) => {
+        if (err) {
+          return next(err);
+        }
+        return res.json({
+          message: "Registration successful",
+          user: { id: newUser.id, email: newUser.email, name: newUser.name },
+        });
       });
 
       res.json({
@@ -232,25 +216,5 @@ export function setupAuth(app: Express) {
     res.status(401).send("Not logged in");
   });
 
-  // Email verification endpoint
-  app.post("/api/verify-email", async (req, res) => {
-    const { token } = req.body;
-    try {
-      // In a real implementation, you would verify the token against a stored value
-      // For this example, we'll just mark the user as verified if they have a token
-      if (!token) {
-        return res.status(400).send("Invalid verification token");
-      }
-
-      // Update user verification status
-      await db
-        .update(users)
-        .set({ verified: 1 })
-        .where(eq(users.id, req.user?.id || 0));
-
-      res.json({ message: "Email verified successfully" });
-    } catch (error) {
-      res.status(500).send("Email verification failed");
-    }
-  });
+  
 }

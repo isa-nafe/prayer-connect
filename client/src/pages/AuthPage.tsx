@@ -19,7 +19,13 @@ export default function AuthPage() {
   const [isRegister, setIsRegister] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<AuthFormData>();
+  const form = useForm<AuthFormData>({
+    defaultValues: {
+      email: '',
+      name: '',
+      password: ''
+    }
+  });
   const { handleSubmit, formState: { isSubmitting } } = form;
 
   const onSubmit = async (data: AuthFormData) => {

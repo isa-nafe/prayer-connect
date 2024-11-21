@@ -87,12 +87,7 @@ export function useUser() {
     },
   });
 
-  const verifyEmailMutation = useMutation<RequestResult, Error, string>({
-    mutationFn: (token) => handleRequest('/api/verify-email', 'POST', { token }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user'] });
-    },
-  });
+  
 
   return {
     user,
@@ -101,6 +96,6 @@ export function useUser() {
     login: loginMutation.mutateAsync,
     logout: logoutMutation.mutateAsync,
     register: registerMutation.mutateAsync,
-    verifyEmail: verifyEmailMutation.mutateAsync,
+    
   };
 }

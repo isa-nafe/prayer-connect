@@ -7,7 +7,7 @@ export const users = pgTable("users", {
   email: text("email").unique().notNull(),
   name: text("name").notNull(),
   password: text("password").notNull(),
-  verified: integer("verified").default(0),
+  
 });
 
 export const prayers = pgTable("prayers", {
