@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useUser } from "../hooks/use-user";
 import { format } from "date-fns";
 import { Send } from "lucide-react";
@@ -27,8 +28,8 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Connect to WebSocket
-    ws.current = new WebSocket(`ws://${window.location.host}`);
+    // Connect to WebSocket with protocol matching the page
+    ws.current = new WebSocket(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`);
 
     ws.current.onopen = () => {
       if (user) {
@@ -74,12 +75,14 @@ export function PrayerChat({ prayerId, onClose }: PrayerChatProps) {
 
   return (
     <div className="flex flex-col h-[500px]">
-      <div className="flex justify-between items-center p-4 border-b">
-        <h3 className="font-semibold">Prayer Meetup Chat</h3>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          Close
-        </Button>
-      </div>
+      <DialogHeader className="p-4 border-b">
+        <div className="flex justify-between items-center">
+          <DialogTitle className="font-semibold">Prayer Meetup Chat</DialogTitle>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </DialogHeader>
 
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-4">

@@ -82,6 +82,7 @@ export function usePrayers() {
   return {
     prayers,
     isLoading,
+    error,
     createPrayer: createPrayer.mutateAsync,
     joinPrayer: joinPrayer.mutateAsync
   };
