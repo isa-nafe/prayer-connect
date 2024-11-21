@@ -2,6 +2,7 @@ import { useUser } from "../hooks/use-user";
 import { usePrayers } from "../hooks/use-prayers";
 import { Button } from "@/components/ui/button";
 import { PrayerCard } from "../components/PrayerCard";
+import { PrayerTimes } from "../components/PrayerTimes";
 import { CreatePrayerDialog } from "../components/CreatePrayerDialog";
 import { useState } from "react";
 import { Loader2, LogOut, Plus } from "lucide-react";
@@ -27,15 +28,17 @@ export default function HomePage() {
       </header>
 
       <main className="container mx-auto px-4 pt-24 pb-16">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-xl font-semibold text-gray-800">Prayer Meetups</h2>
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Prayer Meetup
-          </Button>
-        </div>
+        <div className="grid md:grid-cols-3 gap-8 mb-8">
+          <div className="md:col-span-2">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-xl font-semibold text-gray-800">Prayer Meetups</h2>
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Prayer Meetup
+              </Button>
+            </div>
 
-        {error ? (
+            {error ? (
           <div className="flex justify-center p-8">
             <div className="text-red-600">Failed to load prayers. Please try again later.</div>
           </div>
@@ -50,6 +53,11 @@ export default function HomePage() {
             ))}
           </div>
         )}
+          </div>
+          <div>
+            <PrayerTimes />
+          </div>
+        </div>
       </main>
 
       <CreatePrayerDialog open={createOpen} onOpenChange={setCreateOpen} />
