@@ -159,15 +159,10 @@ export function setupAuth(app: Express) {
         if (err) {
           return next(err);
         }
-        return res.json({
+        res.json({
           message: "Registration successful",
           user: { id: newUser.id, email: newUser.email, name: newUser.name },
         });
-      });
-
-      res.json({
-        message: "Registration successful. Please check your email to verify your account.",
-        user: { id: newUser.id, email: newUser.email, name: newUser.name },
       });
     } catch (error) {
       next(error);
