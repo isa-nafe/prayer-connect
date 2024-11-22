@@ -1,21 +1,16 @@
-import { Express } from "express";
+import type { Express } from "express";
 import { setupAuth } from "./auth";
 import { setupWebSocket } from "./websocket";
 import { db } from "../db";
-import { prayers, prayerAttendees, messages, users } from "@db/schema";
-import { eq, sql } from "drizzle-orm";
-
-import { WebSocketServer } from 'ws';
-import type { Express } from 'express';
+import { prayers, users, prayerAttendees, messages } from "@db/schema";
+import { eq } from "drizzle-orm";
+import { WebSocket, WebSocketServer } from 'ws';
 
 export function registerRoutes(app: Express) {
-  const wss = app.get('wss') as WebSocketServer;
-  if (!wss) {
-    throw new Error('WebSocket server not initialized');
-  }
   setupAuth(app);
   
-
+  const wss = app.get('wss') as WebSocketServer;
+  
   // Get all prayers
   app.get("/api/prayers", async (req, res) => {
     if (!req.isAuthenticated()) {
@@ -23,47 +18,66 @@ export function registerRoutes(app: Express) {
     }
 
     try {
-      const result = await db
-        .select({
-          id: prayers.id,
-          creatorId: prayers.creatorId,
-          musallahLocation: prayers.musallahLocation,
-          prayerTime: prayers.prayerTime,
-          createdAt: prayers.createdAt,
-          attendeeCount: sql`count(${prayerAttendees.userId})`.as('attendeeCount')
-        })
+      const allPrayers = await db
+        .select()
         .from(prayers)
-        .leftJoin(prayerAttendees, eq(prayers.id, prayerAttendees.prayerId))
-        .groupBy(prayers.id);
+        .orderBy(prayers.prayerTime);
 
-      res.json(result);
+      // Get attendee counts for each prayer
+      const prayersWithCounts = await Promise.all(
+        allPrayers.map(async (prayer) => {
+          const attendees = await db
+            .select()
+            .from(prayerAttendees)
+            .where(eq(prayerAttendees.prayerId, prayer.id));
+
+          return {
+            ...prayer,
+            attendeeCount: attendees.length
+          };
+        })
+      );
+
+      res.json(prayersWithCounts);
     } catch (error) {
       res.status(500).send("Failed to fetch prayers");
     }
   });
 
-  // Create a prayer
+  // Create a new prayer
   app.post("/api/prayers", async (req, res) => {
     if (!req.isAuthenticated()) {
       return res.status(401).send("Not authenticated");
     }
+
+    const { musallahLocation, prayerTime } = req.body;
 
     try {
       const [prayer] = await db
         .insert(prayers)
         .values({
           creatorId: req.user!.id,
-          musallahLocation: req.body.musallahLocation,
-          prayerTime: new Date(req.body.prayerTime)
+          musallahLocation,
+          prayerTime: new Date(prayerTime)
         })
         .returning();
 
+      // Add creator as first attendee
+      await db.insert(prayerAttendees).values({
+        prayerId: prayer.id,
+        userId: req.user!.id
+      });
+
       // Notify all connected clients
-      wss.clients.forEach(client => {
+      const clients = wss.clients as Set<WebSocket>;
+      clients.forEach((client: WebSocket) => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({
             type: "PRAYER_CREATED",
-            prayer
+            prayer: {
+              ...prayer,
+              attendeeCount: 1
+            }
           }));
         }
       });
@@ -83,20 +97,31 @@ export function registerRoutes(app: Express) {
     const prayerId = parseInt(req.params.id);
 
     try {
-      await db
-        .insert(prayerAttendees)
-        .values({
+      // Check if already joined
+      const [existingAttendee] = await db
+        .select()
+        .from(prayerAttendees)
+        .where(eq(prayerAttendees.prayerId, prayerId))
+        .where(eq(prayerAttendees.userId, req.user!.id))
+        .limit(1);
+
+      if (!existingAttendee) {
+        await db.insert(prayerAttendees).values({
           prayerId,
           userId: req.user!.id
         });
+      }
 
       // Notify all connected clients
-      ws.clients.forEach(client => {
-        client.send(JSON.stringify({
-          type: "PRAYER_JOINED",
-          prayerId,
-          userId: req.user!.id
-        }));
+      const clients = wss.clients as Set<WebSocket>;
+      clients.forEach((client: WebSocket) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: "PRAYER_JOINED",
+            prayerId,
+            userId: req.user!.id
+          }));
+        }
       });
 
       res.json({ message: "Joined successfully" });
@@ -104,6 +129,7 @@ export function registerRoutes(app: Express) {
       res.status(500).send("Failed to join prayer");
     }
   });
+
   // Get messages for a prayer
   app.get("/api/prayers/:id/messages", async (req, res) => {
     if (!req.isAuthenticated()) {
