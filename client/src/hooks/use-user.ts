@@ -73,46 +73,30 @@ export function useUser() {
     },
   });
 
-  const logoutMutation = useMutation<RequestResult, Error>({
+  const logoutMutation = useMutation({
     mutationFn: async () => {
-      try {
-        // First close WebSocket connections
-        const wsElements = document.querySelectorAll('[data-websocket-connection]');
-        wsElements.forEach(el => {
-          const ws = (el as any).websocket;
-          if (ws && ws.close) ws.close();
-        });
-        
-        // Clear all cached data
-        queryClient.clear();
-        
-        // Perform logout request
-        const result = await handleRequest('/api/logout', 'POST');
-        
-        if (result.ok) {
-          // Only redirect on successful logout
-          window.location.href = '/';
-        }
-        
-        return result;
-      } catch (error) {
-        console.error('Logout error:', error);
-        throw error;
-      }
-    },
-    onMutate: () => {
-      // Prevent multiple clicks
-      return { previousData: queryClient.getQueryData(['user']) };
-    },
-    onError: (_, __, context) => {
-      // Restore previous data on error
-      if (context) {
-        queryClient.setQueryData(['user'], context.previousData);
-      }
-    },
-    onSettled: () => {
-      // Always clear cache
+      // Close all WebSocket connections first
+      const ws = document.querySelectorAll('ws');
+      ws.forEach(connection => connection.close());
+      
+      // Clear React Query cache
       queryClient.clear();
+      
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+
+      // Force page reload to clear all state
+      window.location.href = '/';
+    },
+    onError: (error) => {
+      console.error('Logout error:', error);
+      queryClient.setQueryData(['user'], null);
     }
   });
 
