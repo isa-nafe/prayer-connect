@@ -10,12 +10,23 @@ export function registerRoutes(app: Express) {
   setupAuth(app);
   
   const wss = app.get('wss') as WebSocketServer;
-  
-  // Get all prayers
-  app.get("/api/prayers", async (req, res) => {
+
+  // Authentication middleware
+  const requireAuth = (req: Express.Request, res: Express.Response, next: Function) => {
     if (!req.isAuthenticated()) {
+      console.log(`[auth] Unauthorized access attempt to ${req.path}`);
       return res.status(401).send("Not authenticated");
     }
+    if (!req.user) {
+      console.log(`[auth] No user found in session for ${req.path}`);
+      return res.status(401).send("User session invalid");
+    }
+    console.log(`[auth] Authenticated user ${req.user.id} accessing ${req.path}`);
+    next();
+  };
+  
+  // Get all prayers
+  app.get("/api/prayers", requireAuth, async (req, res) => {
 
     try {
       const allPrayers = await db
@@ -45,12 +56,12 @@ export function registerRoutes(app: Express) {
   });
 
   // Create a new prayer
-  app.post("/api/prayers", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
+  app.post("/api/prayers", requireAuth, async (req, res) => {
     const { musallahLocation, prayerTime } = req.body;
+    
+    if (!musallahLocation || !prayerTime) {
+      return res.status(400).send("Missing required fields");
+    }
 
     try {
       const [prayer] = await db
@@ -89,12 +100,11 @@ export function registerRoutes(app: Express) {
   });
 
   // Join a prayer
-  app.post("/api/prayers/:id/join", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
+  app.post("/api/prayers/:id/join", requireAuth, async (req, res) => {
     const prayerId = parseInt(req.params.id);
+    if (isNaN(prayerId)) {
+      return res.status(400).send("Invalid prayer ID");
+    }
 
     try {
       // Check if already joined
@@ -135,12 +145,11 @@ export function registerRoutes(app: Express) {
   });
 
   // Get messages for a prayer
-  app.get("/api/prayers/:id/messages", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).send("Not authenticated");
-    }
-
+  app.get("/api/prayers/:id/messages", requireAuth, async (req, res) => {
     const prayerId = parseInt(req.params.id);
+    if (isNaN(prayerId)) {
+      return res.status(400).send("Invalid prayer ID");
+    }
 
     try {
       const result = await db
