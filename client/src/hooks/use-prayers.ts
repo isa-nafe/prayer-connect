@@ -25,14 +25,14 @@ export function usePrayers() {
     mutationFn: async (data: Omit<Prayer, 'id' | 'creatorId' | 'createdAt'>) => {
       const response = await fetch('/api/prayers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(data)
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
+        throw new Error('Failed to create prayer meetup');
       }
 
       return response.json();
@@ -44,10 +44,10 @@ export function usePrayers() {
         description: "Prayer meetup created successfully"
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to create prayer meetup",
         variant: "destructive"
       });
     }

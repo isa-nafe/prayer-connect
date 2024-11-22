@@ -11,30 +11,6 @@ import { Loader2, LogOut, Plus } from "lucide-react";
 export default function HomePage() {
   const { user, logout } = useUser();
   const { prayers, isLoading, error } = usePrayers();
-const handleLogout = async () => {
-  try {
-    // Disable logout button
-    const logoutButton = document.querySelector('[data-logout-button]');
-    if (logoutButton) {
-      (logoutButton as HTMLButtonElement).disabled = true;
-    }
-    
-    await logout();
-  } catch (error) {
-    console.error('Logout failed:', error);
-    toast({
-      title: "Error",
-      description: error instanceof Error ? error.message : "Failed to logout",
-      variant: "destructive"
-    });
-    
-    // Re-enable button on error
-    const logoutButton = document.querySelector('[data-logout-button]');
-    if (logoutButton) {
-      (logoutButton as HTMLButtonElement).disabled = false;
-    }
-  }
-};
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
@@ -44,11 +20,7 @@ const handleLogout = async () => {
           <h1 className="text-2xl font-bold text-green-800">SFU Prayer Connect</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleLogout}
-            >
+            <Button variant="outline" size="sm" onClick={() => logout()}>
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>

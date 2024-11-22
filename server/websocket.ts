@@ -58,21 +58,12 @@ export function setupWebSocket(server: Server) {
   const messageIds = new Set<string>();
 
   wss.on("connection", (ws) => {
+    ws.on("error", console.error);
+
     const extWs = ws as ExtendedWebSocket;
     extWs.isAlive = true;
     extWs.subscribedPrayers = new Set();
     extWs.connectionId = randomBytes(16).toString('hex');
-
-    ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
-      // Attempt reconnection
-      setTimeout(() => {
-        if (ws.readyState === WebSocket.CLOSED) {
-          // Client will handle reconnection
-          ws.terminate();
-        }
-      }, 1000);
-    });
 
     ws.on("pong", () => {
       extWs.isAlive = true;

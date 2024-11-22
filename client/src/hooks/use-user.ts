@@ -73,31 +73,11 @@ export function useUser() {
     },
   });
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      // Close all WebSocket connections first
-      const ws = document.querySelectorAll('ws');
-      ws.forEach(connection => connection.close());
-      
-      // Clear React Query cache
-      queryClient.clear();
-      
-      const response = await fetch('/api/logout', {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Logout failed');
-      }
-
-      // Force page reload to clear all state
-      window.location.href = '/';
+  const logoutMutation = useMutation<RequestResult, Error>({
+    mutationFn: () => handleRequest('/api/logout', 'POST'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
     },
-    onError: (error) => {
-      console.error('Logout error:', error);
-      queryClient.setQueryData(['user'], null);
-    }
   });
 
   const registerMutation = useMutation<RequestResult, Error, InsertUser>({

@@ -62,9 +62,7 @@ export function setupAuth(app: Express) {
     };
   }
 
-  // Setup session first
   app.use(session(sessionSettings));
-  // Then setup passport
   app.use(passport.initialize());
   app.use(passport.session());
 
@@ -118,17 +116,21 @@ export function setupAuth(app: Express) {
   });
 
   // Register endpoint
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/register", async (req, res, next) => {
     try {
       const result = insertUserSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).json({
-          ok: false,
-          message: "Invalid input: " + result.error.issues.map(i => i.message).join(", ")
-        });
+        return res
+          .status(400)
+          .send("Invalid input: " + result.error.issues.map(i => i.message).join(", "));
       }
 
       const { email, password, name } = result.data;
+
+      // Verify SFU email
+      if (!email.endsWith('@sfu.ca')) {
+        return res.status(400).send("Please use your SFU email address");
+      }
 
       // Check if user already exists
       const [existingUser] = await db
@@ -138,10 +140,7 @@ export function setupAuth(app: Express) {
         .limit(1);
 
       if (existingUser) {
-        return res.status(400).json({
-          ok: false,
-          message: "Email already registered"
-        });
+        return res.status(400).send("Email already registered");
       }
 
       // Hash password and create user
@@ -156,26 +155,22 @@ export function setupAuth(app: Express) {
         .returning();
 
       // Log the user in after registration
-      return new Promise<void>((resolve, reject) => {
-        req.login(newUser, (err) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          res.json({
-            ok: true,
-            message: "Registration successful",
-            user: { id: newUser.id, email: newUser.email, name: newUser.name },
-          });
-          resolve();
+      req.login(newUser, (err) => {
+        if (err) {
+          return next(err);
+        }
+        return res.json({
+          message: "Registration successful",
+          user: { id: newUser.id, email: newUser.email, name: newUser.name },
         });
       });
-    } catch (error) {
-      console.error('Registration error:', error);
-      res.status(500).json({
-        ok: false,
-        message: "An unexpected error occurred during registration"
+
+      res.json({
+        message: "Registration successful. Please check your email to verify your account.",
+        user: { id: newUser.id, email: newUser.email, name: newUser.name },
       });
+    } catch (error) {
+      next(error);
     }
   });
 
@@ -205,20 +200,12 @@ export function setupAuth(app: Express) {
 
   // Logout endpoint
   app.post("/api/logout", (req, res) => {
-    if (req.session) {
-      req.session.destroy((err) => {
-        if (err) {
-          console.error('Session destruction failed:', err);
-          return res.status(500).json({ ok: false, message: "Failed to destroy session" });
-        }
-        req.logout(() => {
-          res.clearCookie('connect.sid', { path: '/' });
-          res.json({ ok: true });
-        });
-      });
-    } else {
-      res.json({ ok: true });
-    }
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).send("Logout failed");
+      }
+      res.json({ message: "Logout successful" });
+    });
   });
 
   // Get current user endpoint
