@@ -3,7 +3,7 @@ import { setupAuth } from "./auth";
 import { setupWebSocket } from "./websocket";
 import { db } from "../db";
 import { prayers, users, prayerAttendees, messages } from "@db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { WebSocket, WebSocketServer } from 'ws';
 
 export function registerRoutes(app: Express) {
@@ -101,8 +101,12 @@ export function registerRoutes(app: Express) {
       const [existingAttendee] = await db
         .select()
         .from(prayerAttendees)
-        .where(eq(prayerAttendees.prayerId, prayerId))
-        .where(eq(prayerAttendees.userId, req.user!.id))
+        .where(
+          and(
+            eq(prayerAttendees.prayerId, prayerId),
+            eq(prayerAttendees.userId, req.user!.id)
+          )
+        )
         .limit(1);
 
       if (!existingAttendee) {
