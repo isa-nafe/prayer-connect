@@ -13,7 +13,9 @@ export function usePrayers() {
   const { data: prayers, isLoading, error } = useQuery<PrayerWithAttendees[]>({
     queryKey: ['prayers'],
     queryFn: async () => {
-      const response = await fetch('/api/prayers');
+      const response = await fetch('/api/prayers', {
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch prayers');
       }
@@ -25,6 +27,7 @@ export function usePrayers() {
     mutationFn: async (data: Omit<Prayer, 'id' | 'creatorId' | 'createdAt'>) => {
       const response = await fetch('/api/prayers', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -56,7 +59,8 @@ export function usePrayers() {
   const joinPrayer = useMutation({
     mutationFn: async (prayerId: number) => {
       const response = await fetch(`/api/prayers/${prayerId}/join`, {
-        method: 'POST'
+        method: 'POST',
+        credentials: 'include'
       });
 
       if (!response.ok) {
